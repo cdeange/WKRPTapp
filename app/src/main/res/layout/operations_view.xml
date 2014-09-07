@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<merge
+        xmlns:android="http://schemas.android.com/apk/res/android"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+    <RadioButton
+            android:id="@+id/radio_all"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/radio_all" />
+
+    <RadioButton
+            android:id="@+id/radio_get"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/radio_get" />
+
+    <RadioButton
+            android:id="@+id/radio_post"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/radio_post" />
+
+    <RadioButton
+            android:id="@+id/radio_multipart"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/radio_multipart" />
+
+    <RadioButton
+            android:id="@+id/radio_image"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/radio_image" />
+
+    <RadioButton
+            android:id="@+id/radio_batch"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/radio_batch" />
+
+</merge>

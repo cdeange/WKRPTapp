@@ -1,0 +1,62 @@
+<ScrollView
+        xmlns:android="http://schemas.android.com/apk/res/android"
+        xmlns:tools="http://schemas.android.com/tools"
+        android:layout_height="match_parent"
+        android:layout_width="match_parent"
+        android:fillViewport="true"
+        tools:context=".MainActivity">
+
+    <LinearLayout
+            android:id="@+id/container"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+        <Button
+                android:id="@+id/lib_hurl"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Run HttpUrlConnection Tests"/>
+
+        <com.deange.wkrpt300.ui.OperationView
+                android:id="@+id/lib_hurl_options"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="24dp"
+                android:orientation="horizontal" />
+
+        <Button
+                android:id="@+id/lib_retrofit"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Run Retrofit Tests"/>
+
+        <com.deange.wkrpt300.ui.OperationView
+                android:id="@+id/lib_retrofit_options"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="24dp"
+                android:orientation="horizontal" />
+
+        <Button
+                android:id="@+id/lib_volley"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Run Volley Tests"/>
+
+        <com.deange.wkrpt300.ui.OperationView
+                android:id="@+id/lib_volley_options"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="24dp"
+                android:orientation="horizontal" />
+
+        <TextView
+                android:id="@+id/test_results"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textIsSelectable="true" />
+
+    </LinearLayout>
+
+</ScrollView>

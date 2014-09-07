@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">WKRPTapp</string>
+    <string name="run_tests_button">Run Tests</string>
+    <string name="cancel_tests_button">Cancel Tests</string>
+    <string name="radio_all">ALL</string>
+    <string name="radio_get">GET</string>
+    <string name="radio_post">POST</string>
+    <string name="radio_multipart">MULTI</string>
+    <string name="radio_image">IMAGE</string>
+    <string name="radio_batch">BATCH</string>
+</resources>
