@@ -1,8 +1,10 @@
 package com.deange.wkrpt300.ui;
 
+import android.app.Activity;
 import android.content.Context;
-import android.os.AsyncTask;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.support.v4.app.Fragment;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -11,23 +13,30 @@ import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.TextView;
 
-import com.deange.wkrpt300.CharArrayPrintWriter;
 import com.deange.wkrpt300.R;
-import com.deange.wkrpt300.network.LibraryRunner;
 import com.deange.wkrpt300.network.NetworkLibrary;
+import com.deange.wkrpt300.network.NetworkTask;
 import com.deange.wkrpt300.network.hurl.HttpURLConnectionLibrary;
 import com.deange.wkrpt300.network.retrofit.RetrofitLibrary;
 import com.deange.wkrpt300.network.volley.VolleyLibrary;
 
-public class LibraryFragment extends Fragment implements View.OnClickListener {
+import java.util.Observable;
+import java.util.Observer;
+
+public class LibraryFragment extends Fragment
+        implements View.OnClickListener, NetworkTask.OnNetworkTaskCompleteListener {
 
     private static final String ARG_SECTION_NUMBER = "lib";
-    private static int TASK_INSTANCES_RUNNING = 0;
 
     private Button mButton;
     private TextView mResultsView;
     private OperationView mOptionsView;
-    private NetworkTask mTask;
+    private UIObserver mObserver = new UIObserver() {
+        @Override
+        public void updateOnMainThread(final Observable observable, final Object data) {
+            updateButtonText();
+        }
+    };
 
     public static LibraryFragment newInstance(final int section) {
         LibraryFragment fragment = new LibraryFragment();
@@ -49,14 +58,28 @@ public class LibraryFragment extends Fragment implements View.OnClickListener {
         mOptionsView = (OperationView) rootView.findViewById(R.id.lib_options_group);
         mResultsView = (TextView) rootView.findViewById(R.id.test_results);
 
+        updateButtonText();
         mButton.setOnClickListener(this);
+
         return rootView;
+    }
+
+    @Override
+    public void onAttach(final Activity activity) {
+        super.onAttach(activity);
+        NetworkTask.register(mObserver);
+    }
+
+    @Override
+    public void onDetach() {
+        super.onDetach();
+        NetworkTask.unregister(mObserver);
     }
 
     @Override
     public void onClick(final View v) {
         if (v.getId() == R.id.lib_start_button) {
-            if (mTask == null) {
+            if (NetworkTask.getInstance() == null) {
                 run();
             } else {
                 cancel();
@@ -64,16 +87,30 @@ public class LibraryFragment extends Fragment implements View.OnClickListener {
         }
     }
 
-    private void run() {
-        mTask = new NetworkTask(getLibrary(), mOptionsView.getType());
-        final boolean started = mTask.start();
-        if (started) {
+    private void updateButtonText() {
+        if (NetworkTask.canAcquireNewTask()) {
+            mButton.setText(R.string.run_tests_button);
+        } else {
             mButton.setText(R.string.cancel_tests_button);
         }
     }
 
+    private void run() {
+        final NetworkTask task = NetworkTask.acquireNewTask(
+                getLibrary(), this, mOptionsView.getType());
+
+        if (task == null) {
+            Log.w("NetworkTask",
+                    "Please wait for other NetworkTask to finish!", new IllegalStateException());
+            return;
+        }
+
+        updateButtonText();
+        task.execute();
+    }
+
     private void cancel() {
-        mTask.cancel();
+        NetworkTask.getInstance().cancel();
     }
 
     private NetworkLibrary getLibrary() {
@@ -86,51 +123,29 @@ public class LibraryFragment extends Fragment implements View.OnClickListener {
         }
     }
 
-    private final class NetworkTask extends AsyncTask<Void, Void, String> {
+    @Override
+    public void onPostComplete(final String output) {
+        NetworkTask.releaseTask();
+        updateButtonText();
 
-        private final NetworkLibrary mLibrary;
-        private final int mOptions;
-        private final LibraryRunner mRunner;
-
-        private NetworkTask(final NetworkLibrary library, final int options) {
-            mLibrary = library;
-            mOptions = options;
-            mRunner = new LibraryRunner(mLibrary);
-        }
-
-        public boolean start() {
-            if (TASK_INSTANCES_RUNNING != 0) {
-                Log.w("NetworkTask",
-                        "Please wait for other NetworkTasks to finish!", new Exception());
-                return false;
-            }
-
-            TASK_INSTANCES_RUNNING++;
-            execute();
-            return true;
-        }
-
-        public void cancel() {
-            mRunner.cancel();
-        }
-
-        @Override
-        protected String doInBackground(final Void... params) {
-
-            final CharArrayPrintWriter writer = new CharArrayPrintWriter();
-            mRunner.setWriter(writer);
-            mRunner.run(mOptions);
-
-            return writer.toString();
-        }
-
-        @Override
-        protected void onPostExecute(final String result) {
-            mTask = null;
-
-            TASK_INSTANCES_RUNNING--;
-            mButton.setText(R.string.run_tests_button);
-            mResultsView.setText(result);
-        }
+        mResultsView.setText(output);
     }
+
+    private static abstract class UIObserver implements Observer {
+
+        private static final Handler mHandler = new Handler(Looper.getMainLooper());
+
+        @Override
+        public void update(final Observable observable, final Object data) {
+            mHandler.post(new Runnable() {
+                @Override
+                public void run() {
+                    updateOnMainThread(observable, data);
+                }
+            });
+        }
+
+        public abstract void updateOnMainThread(final Observable observable, final Object data);
+    }
+
 }
