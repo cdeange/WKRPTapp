@@ -1,28 +1,29 @@
 package com.deange.wkrpt300.network;
 
+import com.deange.wkrpt300.model.Countdown;
 import com.deange.wkrpt300.model.OperationParams;
 import com.deange.wkrpt300.model.ResponseStats;
 
 import java.io.IOException;
 
-public interface NetworkLibrary {
+public abstract class NetworkLibrary {
 
-    public static final boolean LOGDEBUG = false;
+    public Countdown mCountdown;
 
-    public ResponseStats.Get get(final String url, final OperationParams.Get params)
+    public abstract ResponseStats.Get get(final String url, final OperationParams.Get params)
             throws IOException;
 
-    public ResponseStats.Post post(final String url, final OperationParams.Post params)
+    public abstract ResponseStats.Post post(final String url, final OperationParams.Post params)
             throws IOException;
 
-    public ResponseStats.MultipartPost postMultipart(final String url,
+    public abstract ResponseStats.MultipartPost postMultipart(final String url,
                                                      final OperationParams.Multipart params)
             throws IOException;
 
-    public ResponseStats.ImageGet loadImage(final String url, final OperationParams.Image params)
+    public abstract ResponseStats.ImageGet loadImage(final String url, final OperationParams.Image params)
             throws IOException;
 
-    public ResponseStats batchGet(final String... urls)
+    public abstract ResponseStats batchGet(final String... urls)
             throws IOException;
 
 }

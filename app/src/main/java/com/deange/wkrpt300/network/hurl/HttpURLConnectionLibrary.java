@@ -3,6 +3,8 @@ package com.deange.wkrpt300.network.hurl;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.os.Handler;
+import android.os.Looper;
 
 import com.deange.wkrpt300.Utils;
 import com.deange.wkrpt300.model.Countdown;
@@ -19,7 +21,7 @@ import java.net.URL;
 import java.nio.charset.Charset;
 import java.util.UUID;
 
-public class HttpURLConnectionLibrary implements NetworkLibrary {
+public class HttpURLConnectionLibrary extends NetworkLibrary {
 
     private Context mContext;
     private final OperationController mController;
@@ -163,34 +165,33 @@ public class HttpURLConnectionLibrary implements NetworkLibrary {
 
         mController.reset();
         mController.start();
-
-        final Countdown countdown = new Countdown();
+        mCountdown = new Countdown();
 
         for (final String url : urls) {
 
-            new SafeAsyncTask() {
+            new Thread(new Runnable() {
                 @Override
-                protected void doInBackground() throws Exception {
-                    final URL obj = new URL(url);
-                    final HttpURLConnection con = (HttpURLConnection) obj.openConnection();
-                    con.connect();
-                    final InputStream in = con.getInputStream();
-                    Utils.streamToByteArray(in); // Read the stream
-                    in.close();
-                    con.disconnect();
+                public void run() {
+                    try {
+                        final URL obj = new URL(url);
+                        final HttpURLConnection con = (HttpURLConnection) obj.openConnection();
+                        con.connect();
+                        final InputStream in = con.getInputStream();
+                        Utils.streamToByteArray(in); // Read the stream
+                        in.close();
+                        con.disconnect();
+                    } catch (final Exception ignored) {
+
+                    } finally {
+                        mCountdown.signal();
+                    }
                 }
+            }).start();
 
-                @Override
-                protected void onPostExecute() throws Exception {
-                    countdown.signal();
-                }
-
-            }.execute();
-
-            countdown.await();
+            mCountdown.await();
         }
 
-        countdown.blockUntilDone();
+        mCountdown.blockUntilDone();
         mController.stop();
 
         return new ResponseStats(mController);

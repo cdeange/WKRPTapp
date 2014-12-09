@@ -4,6 +4,7 @@ import android.util.Pair;
 
 import com.deange.wkrpt300.FancyWriter;
 import com.deange.wkrpt300.R;
+import com.deange.wkrpt300.model.Countdown;
 import com.deange.wkrpt300.model.OperationParams;
 import com.deange.wkrpt300.ui.OperationView;
 import com.deange.wkrpt300.model.ResponseStats;
@@ -29,6 +30,10 @@ public class LibraryRunner {
     public static final String URL_MULTIPART = "http://posttestserver.com/post.php?dir=deange";
     public static final String URL_IMAGE = "http://deange.ca/android.png";
     public static final String[] URL_BATCH = new String[] {
+            "http://posttestserver.com/files/2014/07/29/f_00.30.37594730131", // PDF
+            "http://posttestserver.com/files/2014/07/29/f_23.28.43309185761", // JSON
+            "http://deange.ca/android.png",                                   // IMAGE
+            "http://deange.ca/",                                              // HTML
             "http://posttestserver.com/files/2014/07/29/f_00.30.37594730131", // PDF
             "http://posttestserver.com/files/2014/07/29/f_23.28.43309185761", // JSON
             "http://deange.ca/android.png",                                   // IMAGE
@@ -74,6 +79,12 @@ public class LibraryRunner {
 
     public void cancel() {
         mCancelled = true;
+        if (mLibrary != null && mLibrary.mCountdown != null) {
+            final Countdown countdown = mLibrary.mCountdown;
+            while (!countdown.isDone()) {
+                countdown.signal();
+            }
+        }
     }
 
     private boolean has(final int options, final int flag) {

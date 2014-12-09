@@ -4,8 +4,10 @@ import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.net.Uri;
+import android.os.AsyncTask;
+import android.os.Handler;
+import android.os.Looper;
 
-import com.deange.wkrpt300.Utils;
 import com.deange.wkrpt300.model.Countdown;
 import com.deange.wkrpt300.model.OperationController;
 import com.deange.wkrpt300.model.ResponseStats;
@@ -14,8 +16,7 @@ import com.deange.wkrpt300.network.NetworkLibrary;
 import com.deange.wkrpt300.model.OperationParams;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
+import java.util.concurrent.Executor;
 
 import retrofit.Callback;
 import retrofit.RestAdapter;
@@ -30,7 +31,7 @@ import retrofit.http.POST;
 import retrofit.http.Part;
 import retrofit.mime.TypedOutput;
 
-public class RetrofitLibrary implements NetworkLibrary {
+public class RetrofitLibrary extends NetworkLibrary {
 
     private interface NetworkAdapter {
 
@@ -54,6 +55,7 @@ public class RetrofitLibrary implements NetworkLibrary {
     }
 
     private final Context mContext;
+    private final Executor mMainExecutor;
     private final OperationController mController;
     private final NetworkAdapter mDeangeAdapter;
     private final NetworkAdapter mPostTestServerAdapter;
@@ -63,16 +65,26 @@ public class RetrofitLibrary implements NetworkLibrary {
         mController = new OperationController(context);
 
         final Converter converter = new PlainConverter();
+        mMainExecutor = new Executor() {
+            final Handler mHandler = new Handler(Looper.getMainLooper());
+
+            @Override
+            public void execute(final Runnable runnable) {
+                mHandler.post(runnable);
+            }
+        };
 
         mDeangeAdapter = new RestAdapter.Builder()
                 .setEndpoint("http://deange.ca")
                 .setConverter(converter)
+                .setExecutors(mMainExecutor, AsyncTask.THREAD_POOL_EXECUTOR)
                 .build()
                 .create(NetworkAdapter.class);
 
         mPostTestServerAdapter = new RestAdapter.Builder()
                 .setEndpoint("http://posttestserver.com")
                 .setConverter(converter)
+                .setExecutors(mMainExecutor, AsyncTask.THREAD_POOL_EXECUTOR)
                 .build()
                 .create(NetworkAdapter.class);
     }
@@ -143,26 +155,26 @@ public class RetrofitLibrary implements NetworkLibrary {
 
         mController.reset();
         mController.start();
+        mCountdown = new Countdown();
 
-        final Countdown countdown = new Countdown();
+        final Callback<String> callback = new Callback<String>() {
+            @Override
+            public void success(final String s, final Response response) {
+                mCountdown.signal();
+            }
+
+            @Override
+            public void failure(final RetrofitError error) {
+                mCountdown.signal();
+            }
+        };
 
         for (final String url : urls) {
-            mPostTestServerAdapter.get(getEndpointFromUrl(url), new Callback<String>() {
-                @Override
-                public void success(final String s, final Response response) {
-                    countdown.signal();
-                }
-
-                @Override
-                public void failure(final RetrofitError error) {
-                    countdown.signal();
-                }
-            });
-
-            countdown.await();
+            mPostTestServerAdapter.get(getEndpointFromUrl(url), callback);
+            mCountdown.await();
         }
 
-        countdown.blockUntilDone();
+        mCountdown.blockUntilDone();
         mController.stop();
 
         return new ResponseStats(mController);
@@ -170,37 +182,6 @@ public class RetrofitLibrary implements NetworkLibrary {
 
     private static String getEndpointFromUrl(final String fullUrl) {
         return Uri.parse(fullUrl).getPath().substring(1);
-    }
-
-    private static class TypedOutputStream implements TypedOutput {
-
-        private final String mFileName;
-        private final String mMimeType;
-        private final InputStream mStream;
-
-        private TypedOutputStream(String fileName, String mimeType, InputStream stream) {
-            mFileName = fileName;
-            mMimeType = mimeType;
-            mStream = stream;
-        }
-
-        @Override
-        public String fileName() {
-            return mFileName;
-        }
-
-        @Override public String mimeType() {
-            return mMimeType;
-        }
-
-        @Override public long length() {
-            return -1;
-        }
-
-        @Override
-        public void writeTo(final OutputStream out) throws IOException {
-            Utils.streamToStream(mStream, out);
-        }
     }
 
 }

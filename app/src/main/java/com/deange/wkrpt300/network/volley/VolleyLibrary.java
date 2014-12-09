@@ -3,27 +3,21 @@ package com.deange.wkrpt300.network.volley;
 import android.content.Context;
 import android.graphics.Bitmap;
 
-import com.android.volley.AuthFailureError;
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;
-import com.android.volley.Response;
-import com.android.volley.VolleyError;
 import com.android.volley.toolbox.ImageRequest;
 import com.android.volley.toolbox.RequestFuture;
 import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
-import com.deange.wkrpt300.Utils;
 import com.deange.wkrpt300.model.Countdown;
 import com.deange.wkrpt300.model.OperationController;
 import com.deange.wkrpt300.model.OperationParams;
 import com.deange.wkrpt300.model.ResponseStats;
 import com.deange.wkrpt300.network.NetworkLibrary;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 
-public class VolleyLibrary implements NetworkLibrary {
+public class VolleyLibrary extends NetworkLibrary {
 
     private final Context mContext;
     private final OperationController mController;
@@ -109,16 +103,15 @@ public class VolleyLibrary implements NetworkLibrary {
 
         mController.reset();
         mController.start();
-
-        final Countdown countdown = new Countdown();
+        mCountdown = new Countdown();
 
         for (final String url : urls) {
-            final CountdownListener<String> listener = new CountdownListener<String>(countdown);
+            final CountdownListener<String> listener = new CountdownListener<String>(mCountdown);
             mQueue.add(new StringRequest(Request.Method.GET, url, listener, listener));
-            countdown.await();
+            mCountdown.await();
         }
 
-        countdown.blockUntilDone();
+        mCountdown.blockUntilDone();
         mController.stop();
 
         return new ResponseStats(mController);
@@ -128,51 +121,11 @@ public class VolleyLibrary implements NetworkLibrary {
         T response;
         try {
             response = future.get();
-        } catch (Exception e) {
+        } catch (final Exception e) {
             throw new IOException(e);
         }
 
         return response;
-    }
-
-    private static class CountdownListener<T>
-            implements Response.Listener<T>, Response.ErrorListener {
-
-        private final Countdown mCountdown;
-
-        private CountdownListener(final Countdown countdown) {
-            mCountdown = countdown;
-        }
-
-        @Override
-        public void onErrorResponse(final VolleyError error) {
-            mCountdown.signal();
-        }
-
-        @Override
-        public void onResponse(final T response) {
-            mCountdown.signal();
-        }
-    }
-
-    private static class PostFileRequest extends StringRequest {
-
-        private final InputStream mStream;
-
-        public PostFileRequest(final String url,
-                               final Response.Listener<String> listener,
-                               final Response.ErrorListener errorListener,
-                               final InputStream stream) {
-            super(Method.POST, url, listener, errorListener);
-            mStream = stream;
-        }
-
-        @Override
-        public byte[] getBody() throws AuthFailureError {
-            final ByteArrayOutputStream out = new ByteArrayOutputStream();
-            Utils.streamToStream(mStream, out);
-            return out.toByteArray();
-        }
     }
 
 }
